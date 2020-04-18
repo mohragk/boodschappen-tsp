@@ -71,7 +71,6 @@ int nodeCount = 0;
 
             std::ifstream in_file(dir);
             int nodeIndex = 0;
-
             if (in_file) {
                 std::string line;
                 while (std::getline(in_file, line)) {
@@ -160,6 +159,8 @@ int nodeCount = 0;
         nodes = readDataFromText("test.txt");
     }
 
+
+    // UNUSED
     internal void generateRandomNodes(std::array<Point, maxNodes>& nodes) {
 
         for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
@@ -171,6 +172,7 @@ int nodeCount = 0;
         }
     }
 
+    // UNUSED
     internal void generateDefaultNodes(std::array<Point, maxNodes>& nodes) {
 
         int width = 600;
@@ -197,7 +199,7 @@ int nodeCount = 0;
     internal float calculateRouteDistance(const std::array<Point, maxNodes>& nodes, std::array<int, maxNodes> order) {
         float totalDistance = 0.0f;
 
-        for (int i = 0; i < static_cast<int>(order.size()) - 1; i++) {
+        for (int i = 0; i < nodeCount - 1; i++) {
             const int index_a = order[i];
             const int index_b = order[i + 1];
 
@@ -254,8 +256,8 @@ int nodeCount = 0;
 
     internal void mutateOrder(std::array<int, maxNodes>& order) {
         //Simply swap two elements in the order
-        const int index_a = rand() % (maxNodes - 1);
-        const int index_b = (index_a + 1) % maxNodes;
+        const int index_a = min(rand(), (nodeCount - 1));
+        const int index_b = min((index_a + 1) ,nodeCount);
 
         std::swap(order[index_a], order[index_b]);
     }
@@ -278,12 +280,13 @@ int nodeCount = 0;
     internal void outputJSON(std::array<int, maxNodes> route) {
         printf("[ ");
 
-        const uint32_t routeSize = static_cast<uint32_t> (route.size());
+        const uint32_t routeSize = nodeCount - 1;
         int count = 0;
         for (const int index : route) {
             printf("%i", index);
             if (count < routeSize - 1) printf(", ");
             count++;
+          
         }
 
         printf(" ]");
