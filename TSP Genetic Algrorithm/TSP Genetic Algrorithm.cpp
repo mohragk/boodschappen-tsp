@@ -25,7 +25,6 @@
 constexpr int maxNodes = 256;
 constexpr int populationSize = 1 << 12; //4096
 constexpr int totalIterations = 10000;
-int nodeCount = 0;
 
 
 
@@ -86,7 +85,6 @@ int nodeCount = 0;
 
                     locations[nodeIndex] = { x, y };
                     nodeIndex += 1 % maxNodes;     
-                    nodeCount++;
                 }
 
                 in_file.close();
@@ -143,16 +141,16 @@ int nodeCount = 0;
         // obtain a time-based seed:
         unsigned seed = static_cast<int>(std::chrono::system_clock::now().time_since_epoch().count());
 
-        shuffle(arr.begin(), arr.begin()+nodeCount, std::default_random_engine(seed));
+        shuffle(arr.begin(), arr.end(), std::default_random_engine(seed));
     }
 
 
 
 
     internal void initializeNodeOrder() {
-        
-        for (int i = 0; i < nodeCount; i++) {
-            nodeOrder[i] = i;
+        int i = 0;
+        for (int& node : nodeOrder) {
+            node = i++;
         }
     }
 
