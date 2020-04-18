@@ -22,7 +22,7 @@
 #define internal static
 #define persistent static
 
-constexpr int maxNodes = 256;
+constexpr int maxNodes = 16;
 constexpr int populationSize = 1 << 12; //4096
 constexpr int totalIterations = 10000;
 int nodeCount = 0;
@@ -60,48 +60,6 @@ int nodeCount = 0;
         return cwd;
     }
 
-    internal std::array<Point, maxNodes> readDataFromText(const char path[]) {
-
-        std::array<Point, maxNodes> locations{};
-
-       
-        std::string cwd(getCurrentWorkingDirectory());
-        std::string dir(cwd + "\\"  + path) ;
-        try {
-
-            std::ifstream in_file(dir);
-            int nodeIndex = 0;
-            if (in_file) {
-                std::string line;
-                while (std::getline(in_file, line)) {
-                    std::istringstream  is_line(line);
-                    std::string x_pos;
-                    std::getline(is_line, x_pos, ' ');
-                    float x = std::stof(x_pos);
-
-                    std::string y_pos;
-                    std::getline(is_line, y_pos);
-                    float y = std::stof(y_pos);
-
-                    locations[nodeIndex] = { x, y };
-                    nodeIndex += 1 % maxNodes;     
-                    nodeCount++;
-                }
-
-                in_file.close();
-
-            }
-            else {
-                std::cout << "ERROR: File not found:" << dir << "\n";
-            }
-        }
-        catch (std::ifstream::failure e) {
-            std::cerr << "Exception opening/reading/closing file\n";
-        }
-
-        return locations;
-
-    }
 
     std::array<int, maxNodes> nodeOrder{};
     std::array<Point, maxNodes> nodes{};
@@ -155,9 +113,6 @@ int nodeCount = 0;
         }
     }
 
-    internal void generateNodesFromFile(std::array<Point, maxNodes>& nodes) {
-        nodes = readDataFromText("test.txt");
-    }
 
 
     // UNUSED
@@ -183,8 +138,57 @@ int nodeCount = 0;
 
             nodes[nodeIndex] = node;
         }
+        nodeCount = maxNodes;
     }
 
+    internal std::array<Point, maxNodes> readDataFromText(const char path[]) {
+
+        std::array<Point, maxNodes> locations{};
+
+       
+        std::string cwd(getCurrentWorkingDirectory());
+        std::string dir(cwd + "\\"  + path) ;
+        try {
+
+            std::ifstream in_file(dir);
+            int nodeIndex = 0;
+            if (in_file) {
+                std::string line;
+                while (std::getline(in_file, line)) {
+                    std::istringstream  is_line(line);
+                    std::string x_pos;
+                    std::getline(is_line, x_pos, ' ');
+                    float x = std::stof(x_pos);
+
+                    std::string y_pos;
+                    std::getline(is_line, y_pos);
+                    float y = std::stof(y_pos);
+
+                    locations[nodeIndex] = { x, y };
+                    nodeIndex++;
+                    nodeCount++;
+                    if (nodeCount > maxNodes) { nodeCount--; break; }
+                }
+
+                in_file.close();
+
+            }
+            else {
+                generateDefaultNodes(locations);
+                
+            }
+        }
+        catch (std::ifstream::failure e) {
+            std::cerr << "Exception opening/reading/closing file\n";
+        }
+
+        return locations;
+
+    }
+    
+    internal void generateNodesFromFile(std::array<Point, maxNodes>& nodes) {
+        nodes = readDataFromText("test.txt");
+    }
 
     internal void generatePopulation() {
 
@@ -256,8 +260,10 @@ int nodeCount = 0;
 
     internal void mutateOrder(std::array<int, maxNodes>& order) {
         //Simply swap two elements in the order
-        const int index_a = min(rand(), (nodeCount - 1));
-        const int index_b = min((index_a + 1) ,nodeCount);
+
+        const unsigned int rand = std::rand();
+        const int index_a = min(rand, (nodeCount - 1));
+        const int index_b = min((index_a + 1), (nodeCount - 1));
 
         std::swap(order[index_a], order[index_b]);
     }
@@ -303,12 +309,20 @@ int main( int argc, char* args[] )
     initializeNodeOrder();
     generatePopulation();
    
+    printNodesArray(nodes);
+    printf("\n");
+    printArray(nodeOrder);
+    printf("\n");
+
     int iterations = totalIterations;
     while (iterations--) {
         calculateFitness(population);
         normalizeFitness(population);
         nextGeneration(population);
     }
+
+    printArray(nodeOrder);
+    printf("\n");
 
     outputJSON(bestRoute);    
 }
