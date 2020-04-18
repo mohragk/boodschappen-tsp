@@ -23,12 +23,9 @@
 #define persistent static
 
 constexpr int maxNodes = 16;
-constexpr int populationSize = 1 << 12; //4096
-constexpr int totalIterations = 10000;
+constexpr int populationSize = 1 << 2; //4096
+constexpr int totalIterations = 1;
 int nodeCount = 0;
-
-
-
 
     struct Point {
         float x;
@@ -217,7 +214,7 @@ int nodeCount = 0;
         return totalDistance;
     }
 
-    internal void calculateFitness(std::array<Member, populationSize>& population) {
+    internal void calculateFitness(std::array<Member, populationSize>& population, std::array<Point, maxNodes>& nodes) {
         for (Member& member : population) {
             float distance = calculateRouteDistance(nodes, member.nodeOrder);
             if (distance < shortestDistance) {
@@ -254,7 +251,7 @@ int nodeCount = 0;
 
         index = (index > (populationSize - 1)) ? populationSize - 1 : index;
         index = (index < 0) ? 0 : index;
-        assert(index >= 0 && index < populationSize - 1);
+        assert(index >= 0 && index < populationSize);
         return population[index].nodeOrder;
     }
 
@@ -316,12 +313,12 @@ int main( int argc, char* args[] )
 
     int iterations = totalIterations;
     while (iterations--) {
-        calculateFitness(population);
+        calculateFitness(population, nodes);
         normalizeFitness(population);
         nextGeneration(population);
     }
 
-    printArray(nodeOrder);
+    printArray(bestRoute);
     printf("\n");
 
     outputJSON(bestRoute);    
