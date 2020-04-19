@@ -17,16 +17,12 @@
 #include <random>
 #include <iterator>
 #include <algorithm>
-#include <array>
+#include <vector>
 
 #define internal static
 #define persistent static
 
-constexpr uint16_t maxNodes = 128;
-constexpr uint32_t populationSize = 1 << 12; //4096
-constexpr uint32_t totalIterations = 1000;
-
-uint16_t nodesInUse = 0;
+constexpr int populationSize = 1 << 12; //4096
 
 
     struct Point {
@@ -35,17 +31,17 @@ uint16_t nodesInUse = 0;
     };
 
     struct Member {
-        std::array<int, maxNodes> nodeOrder;
+        std::vector<int> nodeOrder;
         float fitness;
     };
 
-    internal void printArray(std::array<int, maxNodes> array) {
+    internal void printArray(std::vector<int> array) {
         for (int item : array) {
             printf("[ %i ]", item);
         }
     }
 
-    internal void printNodesArray(std::array<Point, maxNodes> nodes) {
+    internal void printNodesArray(std::vector<Point> nodes) {
         printf("Nodes: \n");
         for (uint16_t i = 0; i < nodesInUse; i++){
             printf(" { x: %f, y: %f } \n", nodes[i].x, nodes[i].y);
@@ -59,10 +55,8 @@ uint16_t nodesInUse = 0;
         return cwd;
     }
 
-    internal void generateNodesFromFile(std::array<Point, maxNodes>& nodes, const char path[]) {
+    internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]) {
 
-
-       
         std::string cwd(getCurrentWorkingDirectory());
         std::string dir(cwd + "\\"  + path) ;
         try {
@@ -82,9 +76,7 @@ uint16_t nodesInUse = 0;
                     std::getline(is_line, y_pos);
                     float y = std::stof(y_pos);
 
-                    nodes[nodeIndex] = { x, y };
-                    nodeIndex += 1 % maxNodes;     
-                    nodesInUse = nodeIndex;
+                    nodes.emplace_back(Point({ x, y }));
                 }
 
                 in_file.close();
@@ -98,17 +90,10 @@ uint16_t nodesInUse = 0;
             std::cerr << "Exception opening/reading/closing file\n";
         }
 
-       
 
     }
 
-    std::array<int, maxNodes> nodeOrder{};
-    std::array<Point, maxNodes> nodes{};
-
-    std::array<Member, populationSize> population{};
-
-    float shortestDistance = (std::numeric_limits<float>::max)();
-    std::array<int, maxNodes> bestRoute{ };
+   
 
 
     internal float randomFloat() {
@@ -137,7 +122,7 @@ uint16_t nodesInUse = 0;
         return std::hypot(x, y);
     }
 
-    internal void shuffleArray(std::array<int, maxNodes>& arr) {
+    internal void shuffleArray(std::vector<int>& arr) {
         // obtain a time-based seed:
         unsigned seed = static_cast<int>(std::chrono::system_clock::now().time_since_epoch().count());
 
@@ -147,58 +132,60 @@ uint16_t nodesInUse = 0;
 
 
 
-    internal void initializeNodeOrder(std::array<int, maxNodes>& nodeOrder) {
+    internal void initializeNodeOrder(std::vector<int>& nodeOrder, std::vector<Point>& nodes) {
+        uint16_t nodesInUse = static_cast<uint16_t> ( nodes.size() );
         for (uint16_t i = 0; i < nodesInUse; i++) {
-            nodeOrder[i] = i;
+            nodeOrder.emplace_back( i );
         }
+       
     }
 
-
-    internal void generateRandomNodes(std::array<Point, maxNodes>& nodes) {
-
+  
+    internal void generateRandomNodes(std::vector<Point>& nodes) {
+        int maxNodes = 16;
         for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
             Point node = {};
             node.x = randomFloat(1.0f, 800.0f);
             node.y = randomFloat(1.0f, 600.0f);
 
-            nodes[nodeIndex] = node;
+            nodes.emplace_back(node);
         }
     }
 
-    internal void generateDefaultNodes(std::array<Point, maxNodes>& nodes) {
-
+    internal void generateDefaultNodes(std::vector<Point>& nodes) {
+        int maxNodes = 16;
         int width = 600;
         for (uint16_t nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
             Point node = {};
             node.x = 10.f * (nodeIndex % width);
             node.y = 9.f * (nodeIndex % width);
 
-            nodes[nodeIndex] = node;
+            nodes.emplace_back(node);
         }
     }
 
 
-    internal void fillPopulation(std::array<Member, populationSize>& population) {
+    internal void fillPopulation(std::vector<Member>& population, std::vector<int>& nodeOrder) {
 
         for (uint32_t populationIndex = 0; populationIndex < populationSize; populationIndex++) {
             shuffleArray(nodeOrder);
             Member member = { nodeOrder, 1.0 };
-            population[populationIndex] = member;
+            population.emplace_back(member);
         }
     }
 
 
-    internal float calculateRouteDistance(const std::array<Point, maxNodes>& nodes, std::array<int, maxNodes> order) {
+    internal float calculateRouteDistance(const std::vector<Point>& nodes, std::vector<int> order) {
         float totalDistance = 0.0f;
 
-        for (uint16_t i = 0; i < nodesInUse - 1 ; i++) {
-            const uint16_t i_next = i + 1;
+        for (uint16_t i = 0; i < static_cast<int>(order.size()) - 1; i++) {
+            const uint16_t i_second = i + 1;
             const uint16_t index_a = order[i];
-            const uint16_t index_b = order[i_next];
+            const uint16_t index_b = order[i_second];
 
             const Point node_a = nodes[index_a];
             const Point node_b = nodes[index_b];
-
+            
             float distance = getDistance(node_a, node_b);
 
             totalDistance += distance;
@@ -206,7 +193,7 @@ uint16_t nodesInUse = 0;
         return totalDistance;
     }
 
-    internal void calculateFitness(std::array<Member, populationSize>& population) {
+    internal void calculateFitness(std::vector<Member>& population, std::vector<Point>& nodes, float &shortestDistance, std::vector<int> &bestRoute) {
         for (Member& member : population) {
             float distance = calculateRouteDistance(nodes, member.nodeOrder);
             if (distance < shortestDistance) {
@@ -219,7 +206,7 @@ uint16_t nodesInUse = 0;
         }
     }
 
-    internal void normalizeFitness(std::array<Member, populationSize>& population) {
+    internal void normalizeFitness(std::vector<Member>& population) {
         float sum = 0.f;
         for (const Member& member : population) {
             sum += member.fitness;
@@ -230,11 +217,12 @@ uint16_t nodesInUse = 0;
         }
     }
 
-    internal std::array<int, maxNodes> pickOrderFromPopulation(std::array<Member, populationSize>& population) {
-        uint32_t index = 0;
+    internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& population) {
+        int index = 0;
         float r = randomFloat();
 
-        while (r > 0.f && index < populationSize) {
+        // TODO: nodes.size() as argument
+        while (r > 0.f && index < population.size()) {
             r = r - population[index].fitness;
             index++;
         }
@@ -247,31 +235,32 @@ uint16_t nodesInUse = 0;
         return population[index].nodeOrder;
     }
 
-    internal void mutateOrder(std::array<int, maxNodes>& order) {
+    internal void mutateOrder(std::vector<int>& order) {
         //Simply swap two elements in the order
-        const uint16_t index_a = rand() % (nodesInUse - 1);
-        const uint16_t index_b = (index_a + 1) % nodesInUse;
+        const uint16_t index_a = rand() % (static_cast<uint16_t> (order.size()) - 1);
+        const uint16_t index_b = (index_a + 1) % order.size();
 
         std::swap(order[index_a], order[index_b]);
     }
 
-    internal void nextGeneration(std::array<Member, populationSize>& population) {
+    internal void nextGeneration(std::vector<Member>& population) {
 
-        
+   
         for (Member& member : population) {
-            std::array<int, maxNodes> order = pickOrderFromPopulation(population);
+            std::vector<int> order = pickOrderFromPopulation(population);
             mutateOrder(order);
-
-            member.nodeOrder = order;    
+            member.nodeOrder = order;
         }
     }
 
-    internal void outputJSON(std::array<int, maxNodes> route) {
+    internal void outputJSON(std::vector<int> route) {
         printf("[ ");
 
-        for (uint16_t i = 0; i < nodesInUse; i++ ){
-            printf("%i", route[i]);
-            if (i < nodesInUse - 1) printf(", ");
+        uint16_t count{0};
+        for (const int index : route) {
+            printf("%i", index);
+            if (count < route.size() - 1) printf(", ");
+            count++;
         }
 
         printf(" ]");
@@ -283,19 +272,28 @@ int main( int argc, char* args[] )
 {
     std::srand((uint32_t)std::time(0));
 
+    std::vector<Point> nodes{};
+    std::vector<int> nodeOrder{};
+
+    std::vector<Member> population{};
+
+    float shortestDistance = (std::numeric_limits<float>::max)();
+    std::vector<int> bestRoute{};
     
     generateNodesFromFile(nodes, "test.txt");
-    initializeNodeOrder(nodeOrder);
-    fillPopulation(population);
-    printNodesArray(nodes);
+    initializeNodeOrder(nodeOrder, nodes);
+    fillPopulation(population, nodeOrder);
    
-    int iterations = totalIterations;
+    
+
+    int iterations = args[1] ? std::stoi( args[1] ) : 1000;
     while (iterations--) {
-        calculateFitness(population);
+        calculateFitness(population, nodes, shortestDistance, bestRoute);
         normalizeFitness(population);
         nextGeneration(population);
     }
 
 
     outputJSON(bestRoute);    
+    
 }
