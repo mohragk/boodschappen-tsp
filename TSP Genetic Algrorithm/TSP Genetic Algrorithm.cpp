@@ -22,7 +22,7 @@
 #define internal static
 #define persistent static
 
-constexpr uint16_t maxNodes = 32;
+constexpr uint16_t maxNodes = 128;
 constexpr uint32_t populationSize = 1 << 12; //4096
 constexpr uint32_t totalIterations = 1000;
 
