@@ -23,7 +23,6 @@
 #define persistent static
 
 constexpr int populationSize = 1 << 12; //4096
-constexpr int totalIterations = 1000;
 
 
     struct Point {
@@ -287,14 +286,13 @@ int main( int argc, char* args[] )
    
     
 
-    int iterations = totalIterations;
+    int iterations = args[1] ? std::stoi( args[1] ) : 1000;
     while (iterations--) {
         calculateFitness(population, nodes, shortestDistance, bestRoute);
         normalizeFitness(population);
         nextGeneration(population);
     }
 
-    
-
     outputJSON(bestRoute);    
+    
 }
