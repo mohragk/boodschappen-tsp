@@ -257,9 +257,10 @@ internal void outputJSON(std::vector<int> route) {
     printf("[ ");
 
     uint16_t count{ 0 };
-    for (const int index : route) {
-        printf("%i", index);
-        if (count < route.size() - 1) printf(", ");
+    uint16_t routeSize = static_cast<uint16_t> ( route.size() );
+    for (const int nodeIndex : route) {
+        printf("%i", nodeIndex);
+        if (count < routeSize - 1) printf(", ");
         count++;
     }
 
@@ -280,7 +281,7 @@ int main(int argc, char* args[])
     float shortestDistance = (std::numeric_limits<float>::max)();
     std::vector<int> bestRoute{};
 
-    generateNodesFromFile(nodes, "test.txt");
+    generateNodesFromFile(nodes, "coords.txt");
     initializeNodeOrder(nodeOrder, nodes);
     fillPopulation(population, nodeOrder);
 
@@ -295,4 +296,5 @@ int main(int argc, char* args[])
 
     outputJSON(bestRoute);
 
+    return 0;
 }
