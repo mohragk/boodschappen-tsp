@@ -94,13 +94,7 @@ constexpr int totalIterations = 1000;
 
     }
 
-    std::vector<int> nodeOrder{};
-    std::vector<Point> nodes{};
-
-    std::vector<Member> population{};
-
-    float shortestDistance = (std::numeric_limits<float>::max)();
-    std::vector<int> bestRoute{ };
+   
 
 
     internal float randomFloat() {
@@ -139,11 +133,12 @@ constexpr int totalIterations = 1000;
 
 
 
-    internal void initializeNodeOrder(std::vector<int>& nodeOrder) {
-        int i = 0;
-        for (int i = 0; i < nodes.size(); i++) {
-            nodeOrder.emplace_back( i++ );
+    internal void initializeNodeOrder(std::vector<int>& nodeOrder, std::vector<Point>& nodes) {
+        uint16_t nodesInUse = static_cast<uint16_t> ( nodes.size() );
+        for (uint16_t i = 0; i < nodesInUse; i++) {
+            nodeOrder.emplace_back( i );
         }
+       
     }
 
   
@@ -171,7 +166,7 @@ constexpr int totalIterations = 1000;
     }
 
 
-    internal void generatePopulation() {
+    internal void fillPopulation(std::vector<Member>& population, std::vector<int>& nodeOrder) {
 
         for (int populationIndex = 0; populationIndex < populationSize; populationIndex++) {
             shuffleArray(nodeOrder);
@@ -199,7 +194,7 @@ constexpr int totalIterations = 1000;
         return totalDistance;
     }
 
-    internal void calculateFitness(std::vector<Member>& population) {
+    internal void calculateFitness(std::vector<Member>& population, std::vector<Point>& nodes, float &shortestDistance, std::vector<int> &bestRoute) {
         for (Member& member : population) {
             float distance = calculateRouteDistance(nodes, member.nodeOrder);
             if (distance < shortestDistance) {
@@ -243,8 +238,8 @@ constexpr int totalIterations = 1000;
 
     internal void mutateOrder(std::vector<int>& order) {
         //Simply swap two elements in the order
-        const int index_a = rand() % (order.size() - 1);
-        const int index_b = (index_a + 1) % order.size();
+        const uint16_t index_a = rand() % (static_cast<uint16_t> (order.size()) - 1);
+        const uint16_t index_b = (index_a + 1) % order.size();
 
         std::swap(order[index_a], order[index_b]);
     }
@@ -262,11 +257,10 @@ constexpr int totalIterations = 1000;
     internal void outputJSON(std::vector<int> route) {
         printf("[ ");
 
-        const uint32_t routeSize = static_cast<uint32_t> (route.size());
-        int count = 0;
+        uint16_t count{0};
         for (const int index : route) {
             printf("%i", index);
-            if (count < routeSize - 1) printf(", ");
+            if (count < route.size() - 1) printf(", ");
             count++;
         }
 
@@ -279,17 +273,28 @@ int main( int argc, char* args[] )
 {
     std::srand((uint32_t)std::time(0));
 
+    std::vector<Point> nodes{};
+    std::vector<int> nodeOrder{};
+
+    std::vector<Member> population{};
+
+    float shortestDistance = (std::numeric_limits<float>::max)();
+    std::vector<int> bestRoute{};
     
     generateNodesFromFile(nodes, "test.txt");
-    initializeNodeOrder(nodeOrder);
-    generatePopulation();
+    initializeNodeOrder(nodeOrder, nodes);
+    fillPopulation(population, nodeOrder);
    
+    
+
     int iterations = totalIterations;
     while (iterations--) {
-        calculateFitness(population);
+        calculateFitness(population, nodes, shortestDistance, bestRoute);
         normalizeFitness(population);
         nextGeneration(population);
     }
+
+    
 
     outputJSON(bestRoute);    
 }
