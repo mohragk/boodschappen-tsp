@@ -22,11 +22,11 @@
 #define internal static
 #define persistent static
 
-constexpr int maxNodes = 256;
-constexpr int populationSize = 1 << 12; //4096
-constexpr int totalIterations = 10000;
+constexpr uint16_t maxNodes = 256;
+constexpr uint32_t populationSize = 1 << 12; //4096
+constexpr uint32_t totalIterations = 1000;
 
-
+uint16_t nodesInUse = 0;
 
 
     struct Point {
@@ -47,8 +47,8 @@ constexpr int totalIterations = 10000;
 
     internal void printNodesArray(std::array<Point, maxNodes> nodes) {
         printf("Nodes: \n");
-        for (const Point& node : nodes) {
-            printf(" { x: %f, y: %f } \n", node.x, node.y);
+        for (uint16_t i = 0; i < nodesInUse; i++){
+            printf(" { x: %f, y: %f } \n", nodes[i].x, nodes[i].y);
         }
 
     }
@@ -59,9 +59,8 @@ constexpr int totalIterations = 10000;
         return cwd;
     }
 
-    internal std::array<Point, maxNodes> readDataFromText(const char path[]) {
+    internal void generateNodesFromFile(std::array<Point, maxNodes>& nodes, const char path[]) {
 
-        std::array<Point, maxNodes> locations{};
 
        
         std::string cwd(getCurrentWorkingDirectory());
@@ -69,7 +68,7 @@ constexpr int totalIterations = 10000;
         try {
 
             std::ifstream in_file(dir);
-            int nodeIndex = 0;
+            uint16_t nodeIndex = 0;
 
             if (in_file) {
                 std::string line;
@@ -83,8 +82,9 @@ constexpr int totalIterations = 10000;
                     std::getline(is_line, y_pos);
                     float y = std::stof(y_pos);
 
-                    locations[nodeIndex] = { x, y };
+                    nodes[nodeIndex] = { x, y };
                     nodeIndex += 1 % maxNodes;     
+                    nodesInUse = nodeIndex;
                 }
 
                 in_file.close();
@@ -98,7 +98,7 @@ constexpr int totalIterations = 10000;
             std::cerr << "Exception opening/reading/closing file\n";
         }
 
-        return locations;
+       
 
     }
 
@@ -141,22 +141,18 @@ constexpr int totalIterations = 10000;
         // obtain a time-based seed:
         unsigned seed = static_cast<int>(std::chrono::system_clock::now().time_since_epoch().count());
 
-        shuffle(arr.begin(), arr.end(), std::default_random_engine(seed));
+        shuffle(arr.begin(), arr.begin()+nodesInUse, std::default_random_engine(seed));
     }
 
 
 
 
-    internal void initializeNodeOrder() {
-        int i = 0;
-        for (int& node : nodeOrder) {
-            node = i++;
+    internal void initializeNodeOrder(std::array<int, maxNodes>& nodeOrder) {
+        for (uint16_t i = 0; i < nodesInUse; i++) {
+            nodeOrder[i] = i;
         }
     }
 
-    internal void generateNodesFromFile(std::array<Point, maxNodes>& nodes) {
-        nodes = readDataFromText("test.txt");
-    }
 
     internal void generateRandomNodes(std::array<Point, maxNodes>& nodes) {
 
@@ -172,7 +168,7 @@ constexpr int totalIterations = 10000;
     internal void generateDefaultNodes(std::array<Point, maxNodes>& nodes) {
 
         int width = 600;
-        for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
+        for (uint16_t nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
             Point node = {};
             node.x = 10.f * (nodeIndex % width);
             node.y = 9.f * (nodeIndex % width);
@@ -182,9 +178,9 @@ constexpr int totalIterations = 10000;
     }
 
 
-    internal void generatePopulation() {
+    internal void fillPopulation(std::array<Member, populationSize>& population) {
 
-        for (int populationIndex = 0; populationIndex < populationSize; populationIndex++) {
+        for (uint32_t populationIndex = 0; populationIndex < populationSize; populationIndex++) {
             shuffleArray(nodeOrder);
             Member member = { nodeOrder, 1.0 };
             population[populationIndex] = member;
@@ -195,9 +191,10 @@ constexpr int totalIterations = 10000;
     internal float calculateRouteDistance(const std::array<Point, maxNodes>& nodes, std::array<int, maxNodes> order) {
         float totalDistance = 0.0f;
 
-        for (int i = 0; i < static_cast<int>(order.size()) - 1; i++) {
-            const int index_a = order[i];
-            const int index_b = order[i + 1];
+        for (uint16_t i = 0; i < nodesInUse - 1 ; i++) {
+            const uint16_t i_next = i + 1;
+            const uint16_t index_a = order[i];
+            const uint16_t index_b = order[i_next];
 
             const Point node_a = nodes[index_a];
             const Point node_b = nodes[index_b];
@@ -234,10 +231,10 @@ constexpr int totalIterations = 10000;
     }
 
     internal std::array<int, maxNodes> pickOrderFromPopulation(std::array<Member, populationSize>& population) {
-        int index = 0;
+        uint32_t index = 0;
         float r = randomFloat();
 
-        while (r > 0.f && index < maxNodes) {
+        while (r > 0.f && index < populationSize) {
             r = r - population[index].fitness;
             index++;
         }
@@ -245,43 +242,36 @@ constexpr int totalIterations = 10000;
         index--;
 
         index = (index > (populationSize - 1)) ? populationSize - 1 : index;
-        index = (index < 0) ? 0 : index;
+       
         assert(index >= 0 && index < populationSize - 1);
         return population[index].nodeOrder;
     }
 
     internal void mutateOrder(std::array<int, maxNodes>& order) {
         //Simply swap two elements in the order
-        const int index_a = rand() % (maxNodes - 1);
-        const int index_b = (index_a + 1) % maxNodes;
+        const uint16_t index_a = rand() % (nodesInUse - 1);
+        const uint16_t index_b = (index_a + 1) % nodesInUse;
 
         std::swap(order[index_a], order[index_b]);
     }
 
     internal void nextGeneration(std::array<Member, populationSize>& population) {
 
-        int index = 0;
-        for (const Member& member : population) {
+        
+        for (Member& member : population) {
             std::array<int, maxNodes> order = pickOrderFromPopulation(population);
             mutateOrder(order);
 
-            float fitness = member.fitness;
-
-            population[index].nodeOrder = order;
-            population[index].fitness = fitness;
-            index++;
+            member.nodeOrder = order;    
         }
     }
 
     internal void outputJSON(std::array<int, maxNodes> route) {
         printf("[ ");
 
-        const uint32_t routeSize = static_cast<uint32_t> (route.size());
-        int count = 0;
-        for (const int index : route) {
-            printf("%i", index);
-            if (count < routeSize - 1) printf(", ");
-            count++;
+        for (uint16_t i = 0; i < nodesInUse; i++ ){
+            printf("%i", route[i]);
+            if (i < nodesInUse - 1) printf(", ");
         }
 
         printf(" ]");
@@ -294,9 +284,10 @@ int main( int argc, char* args[] )
     std::srand((uint32_t)std::time(0));
 
     
-    generateNodesFromFile(nodes);
-    initializeNodeOrder();
-    generatePopulation();
+    generateNodesFromFile(nodes, "test.txt");
+    initializeNodeOrder(nodeOrder);
+    fillPopulation(population);
+    printNodesArray(nodes);
    
     int iterations = totalIterations;
     while (iterations--) {
@@ -304,6 +295,7 @@ int main( int argc, char* args[] )
         normalizeFitness(population);
         nextGeneration(population);
     }
+
 
     outputJSON(bestRoute);    
 }
