@@ -64,7 +64,6 @@ internal std::string getExePath() {
 
 internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]) {
 
-    std::string cwd(getCurrentWorkingDirectory());
     std::string exePath(getExePath());
     std::string dir(exePath + "\\" + path);
     try {
@@ -213,9 +212,6 @@ internal void calculateFitness(std::vector<Member>& population, std::vector<Poin
         member.fitness = normalized;
     }
 }
-
-
-
 
 internal void normalizeFitness(std::vector<Member>& population) {
     float sum = 0.f;
