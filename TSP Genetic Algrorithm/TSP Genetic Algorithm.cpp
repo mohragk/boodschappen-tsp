@@ -31,6 +31,7 @@ struct Point {
 };
 
 struct Member {
+    std::vector<Point> nodes;
     std::vector<int> nodeOrder;
     float fitness;
 };
@@ -173,11 +174,19 @@ internal void generateDefaultNodes(std::vector<Point>& nodes) {
 }
 
 
-internal void fillPopulation(std::vector<Member>& population, std::vector<int>& nodeOrder) {
+internal void fillPopulation(std::vector<Member>& population, std::vector<int>& nodeOrder, std::vector<Point> &nodes) {
 
     for (int populationIndex = 0; populationIndex < populationSize; populationIndex++) {
         shuffleArray(nodeOrder);
-        Member member = { nodeOrder, 1.0 };
+
+        std::vector<Point> memberNodes;
+        uint16_t limit = nodeOrder.size();
+        for (uint16_t i = 0; i < limit; i++) {
+            Point node = nodes[nodeOrder[i]];
+            memberNodes.push_back(node);
+        }
+
+        Member member = { memberNodes, nodeOrder, 1.0 };
         population.emplace_back(member);
     }
 }
@@ -201,9 +210,9 @@ internal float calculateRouteDistance(const std::vector<Point>& nodes, std::vect
     return totalDistance;
 }
 
-internal void calculateFitness(std::vector<Member>& population, std::vector<Point>& nodes, float& shortestDistance, std::vector<int>& bestRoute) {
+internal void calculateFitness(std::vector<Member>& population, float& shortestDistance, std::vector<int>& bestRoute) {
     for (Member& member : population) {
-        float distance = calculateRouteDistance(nodes, member.nodeOrder);
+        float distance = calculateRouteDistance(member.nodes, member.nodeOrder);
         if (distance < shortestDistance) {
             shortestDistance = distance;
             bestRoute = member.nodeOrder;
@@ -292,20 +301,25 @@ int main(int argc, char* args[])
     float shortestDistance = (std::numeric_limits<float>::max)();
     std::vector<int> bestRoute{};
 
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     generateNodesFromFile(nodes, "coords.txt");
     initializeNodeOrder(nodeOrder, nodes);
-    fillPopulation(population, nodeOrder);
+    fillPopulation(population, nodeOrder, nodes);
 
 
 
     int iterations = args[1] ? std::stoi(args[1]) : 1000;
     while (iterations--) {
-        calculateFitness(population, nodes, shortestDistance, bestRoute);
+        calculateFitness(population, shortestDistance, bestRoute);
         normalizeFitness(population);
         nextGeneration(population);
     }
 
     outputJSON(bestRoute);
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "\nTime elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" << std::endl;
 
     return 0;
 }
