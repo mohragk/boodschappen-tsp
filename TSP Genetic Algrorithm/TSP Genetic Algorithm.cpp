@@ -55,10 +55,18 @@ internal char* getCurrentWorkingDirectory() {
     return cwd;
 }
 
+internal std::string getExePath() {
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+    return std::string(buffer).substr(0, pos);
+}
+
 internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]) {
 
     std::string cwd(getCurrentWorkingDirectory());
-    std::string dir(cwd + "\\" + path);
+    std::string exePath(getExePath());
+    std::string dir(exePath + "\\" + path);
     try {
 
         std::ifstream in_file(dir);
@@ -205,6 +213,9 @@ internal void calculateFitness(std::vector<Member>& population, std::vector<Poin
         member.fitness = normalized;
     }
 }
+
+
+
 
 internal void normalizeFitness(std::vector<Member>& population) {
     float sum = 0.f;
