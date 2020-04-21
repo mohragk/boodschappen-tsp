@@ -285,8 +285,6 @@ int main(int argc, char* args[])
     float shortestDistance = (std::numeric_limits<float>::max)();
     std::vector<int> bestRoute{};
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
     generateNodesFromFile(nodes, "coords.txt");
     initializeNodeOrder(nodeOrder, nodes);
     fillPopulation(population, nodeOrder);
@@ -302,8 +300,5 @@ int main(int argc, char* args[])
 
     outputJSON(bestRoute);
 
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-
-    std::cout << "\nTime elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
     return 0;
 }
