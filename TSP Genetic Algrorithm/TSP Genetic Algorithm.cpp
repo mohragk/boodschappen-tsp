@@ -101,8 +101,6 @@ internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]
 }
 
 
-
-
 internal float randomFloat() {
     float random = static_cast<float>(std::rand()) / RAND_MAX;
     return random;
@@ -193,7 +191,7 @@ internal float calculateRouteDistance(const std::vector<Point>& nodes, std::vect
         const Point node_a = nodes[index_a];
         const Point node_b = nodes[index_b];
 
-        float distance = getDistance(node_a, node_b);
+        float distance = getDistanceSquared(node_a, node_b);
 
         totalDistance += distance;
     }
@@ -271,10 +269,44 @@ internal void outputJSON(std::vector<int> route) {
     printf(" ]");
 }
 
+struct Options {
+    uint16_t iterations;
+    uint16_t threads;
+};
 
+
+internal Options parseArguments(char* args[], int argc) {
+    Options options;
+    options.iterations = 1000;
+    options.threads = 1;
+
+    if (argc > 1) {
+        for (uint16_t argIndex = 1; argIndex < argc; argIndex++) {
+            std::string arg(args[argIndex]);
+            std::string::size_type pos = arg.find(":");
+            std::string command = arg.substr(0, pos);
+            std::string value = arg.substr(pos + 1);
+            
+            if (command == "iterations") {
+                uint16_t iterations = std::stoi(value);
+                options.iterations = iterations;
+            }
+            else if (command == "threads") {
+                uint16_t threads = std::stoi(value);
+                options.threads = threads;
+            }
+
+            //options.threads = args[2];
+        }
+    }
+
+    return options;
+}
 
 int main(int argc, char* args[])
 {
+    Options options = parseArguments(args, argc);
+
     std::srand((uint32_t)std::time(0));
 
     std::vector<Point> nodes{};
@@ -289,14 +321,18 @@ int main(int argc, char* args[])
     initializeNodeOrder(nodeOrder, nodes);
     fillPopulation(population, nodeOrder);
 
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-
-    int iterations = args[1] ? std::stoi(args[1]) : 1000;
+    int iterations = options.iterations;
     while (iterations--) {
         calculateFitness(population, nodes, shortestDistance, bestRoute);
         normalizeFitness(population);
         nextGeneration(population);
     }
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "\nTime elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
 
     outputJSON(bestRoute);
 
