@@ -224,8 +224,8 @@ internal void normalizeFitness(std::vector<Member>& population) {
     }
 }
 
-internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& population) {
-    int index = 0;
+internal std::vector<int>* pickOrderFromPopulation(std::vector<Member>& population) {
+    uint32_t index = 0;
     float r = randomFloat();
 
     // TODO: nodes.size() as argument
@@ -237,9 +237,8 @@ internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& populatio
     index--;
 
     index = (index > (populationSize - 1)) ? populationSize - 1 : index;
-    index = (index < 0) ? 0 : index;
     assert(index >= 0 && index < populationSize - 1);
-    return population[index].nodeOrder;
+    return &population[index].nodeOrder;
 }
 
 internal void mutateOrder(std::vector<int>& order) {
@@ -252,11 +251,10 @@ internal void mutateOrder(std::vector<int>& order) {
 
 internal void nextGeneration(std::vector<Member>& population) {
 
-
     for (Member& member : population) {
-        std::vector<int> order = pickOrderFromPopulation(population);
-        mutateOrder(order);
-        member.nodeOrder = order;
+        member.nodeOrder = *pickOrderFromPopulation(population);
+        mutateOrder(member.nodeOrder);
+       // member.nodeOrder = order;
     }
 }
 
