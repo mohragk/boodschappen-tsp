@@ -22,7 +22,7 @@
 #define internal static
 #define persistent static
 
-constexpr int populationSize = 1 << 13; // 
+constexpr int populationSize = 1 << 13; // 8192
 
 
 struct Point {
@@ -340,7 +340,6 @@ int main(int argc, char* args[])
     initializeNodeOrder(nodeOrder, nodes);
     fillPopulation(population, nodeOrder);
     
-    printf("Splitting into buckets \n");
 
     // Split into multiple buckets
     std::vector<Bucket> buckets;
@@ -361,7 +360,7 @@ int main(int argc, char* args[])
         buckets.push_back(bucket);
     }
 
-    printf("Iterate over every bucket, numBuckets %i \n", (int)buckets.size());
+
 
     for (Bucket& bucket : buckets) {
         uint32_t iterations = options.iterations;
