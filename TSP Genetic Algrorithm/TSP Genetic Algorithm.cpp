@@ -155,17 +155,14 @@ internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]
 
 
 internal float getDistanceSquared(Point A, Point B) {
-    float x2 = std::abs(B.x - A.x) * std::abs(B.x - A.x);
-    float y2 = std::abs(B.y - A.y) * std::abs(B.y - A.y);
+    float x2 = (B.x - A.x) * (B.x - A.x);
+    float y2 = (B.y - A.y) * (B.y - A.y);
 
     return (x2 + y2);
 }
 
-internal float getDistance(Point a, Point b) {
-    const float x = std::abs(b.x - a.x);
-    const float y = std::abs(b.y - a.y);
-
-    return std::hypot(x, y);
+internal float getDistance(Point A, Point B) {
+    return std::sqrtf(getDistanceSquared(A, B));
 }
 
 internal void shuffleArray(std::vector<int>& arr) {
