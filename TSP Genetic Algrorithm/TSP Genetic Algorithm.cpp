@@ -302,16 +302,15 @@ internal void outputJSON(std::vector<int> route) {
 }
 
 struct Options {
-    u32 iterations;
+    u32 iterations = 1000;
     u32 numBuckets = 128;
-    u16 threads;
+    u16 threads = 1;
 };
 
 
 internal Options parseArguments(char* args[], int argc) {
     Options options;
-    options.iterations = 10000;
-    options.threads = 32;
+    
 
     if (argc > 1) {
         for (u16 argIndex = 1; argIndex < argc; argIndex++) {
