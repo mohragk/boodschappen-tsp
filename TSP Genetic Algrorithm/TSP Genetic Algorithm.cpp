@@ -22,7 +22,7 @@
 #define internal static
 #define persistent static
 
-constexpr int populationSize = 1 << 12; //4096
+constexpr int populationSize = 1 << 13; // 
 
 
 struct Point {
@@ -183,9 +183,9 @@ internal void fillPopulation(std::vector<Member>& population, std::vector<int>& 
 internal float calculateRouteDistance(const std::vector<Point>& nodes, std::vector<int> order) {
     float totalDistance = 0.0f;
 
-    for (uint16_t i = 0; i < static_cast<int>(order.size()) - 1; i++) {
-        const uint16_t i_second = i + 1;
-        const uint16_t index_a = order[i];
+    for (uint32_t i = 0; i < static_cast<int>(order.size()) - 1; i++) {
+        const uint32_t i_second = i + 1;
+        const uint32_t index_a = order[i];
         const uint16_t index_b = order[i_second];
 
         const Point node_a = nodes[index_a];
@@ -222,6 +222,19 @@ internal void normalizeFitness(std::vector<Member>& population) {
     }
 }
 
+internal std::vector<int> pickBestOrderFromPopulation(std::vector<Member>& population) {
+    Member *best = &population[0];
+    float highestFitness = -1.0f;
+    for (Member& member : population) {
+        if (member.fitness > highestFitness) {
+            best = &member;
+            highestFitness = member.fitness;
+        }
+    }
+
+    return best->nodeOrder;
+}
+
 internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& population) {
     uint32_t index = 0;
     float r = randomFloat();
@@ -250,7 +263,7 @@ internal void mutateOrder(std::vector<int>& order) {
 internal void nextGeneration(std::vector<Member>& population) {
 
     for (Member& member : population) {
-        member.nodeOrder = pickOrderFromPopulation(population);
+        member.nodeOrder = pickBestOrderFromPopulation(population);
         mutateOrder(member.nodeOrder);
     }
 }
@@ -270,15 +283,16 @@ internal void outputJSON(std::vector<int> route) {
 }
 
 struct Options {
-    uint16_t iterations;
+    uint32_t iterations;
+    uint32_t numBuckets = 128;
     uint16_t threads;
 };
 
 
 internal Options parseArguments(char* args[], int argc) {
     Options options;
-    options.iterations = 1000;
-    options.threads = 1;
+    options.iterations = 10000;
+    options.threads = 32;
 
     if (argc > 1) {
         for (uint16_t argIndex = 1; argIndex < argc; argIndex++) {
@@ -303,6 +317,11 @@ internal Options parseArguments(char* args[], int argc) {
     return options;
 }
 
+struct Bucket {
+    std::vector<Member> populationChunk;
+    int bucketSize;
+};
+
 int main(int argc, char* args[])
 {
     Options options = parseArguments(args, argc);
@@ -320,19 +339,41 @@ int main(int argc, char* args[])
     generateNodesFromFile(nodes, "coords.txt");
     initializeNodeOrder(nodeOrder, nodes);
     fillPopulation(population, nodeOrder);
+    
+    printf("Splitting into buckets \n");
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    // Split into multiple buckets
+    std::vector<Bucket> buckets;
+    uint16_t numBuckets = options.numBuckets;
+    uint32_t populationIndex = 0;
+    for (uint16_t bucketIndex = 0; bucketIndex <  numBuckets; bucketIndex++) {
+        uint16_t bucketSize = population.size() / numBuckets;
+        
+        Bucket bucket;
+        bucket.bucketSize = bucketSize;
 
-    int iterations = options.iterations;
-    while (iterations--) {
-        calculateFitness(population, nodes, shortestDistance, bestRoute);
-        normalizeFitness(population);
-        nextGeneration(population);
+        // TODO: not just copy all the data
+        for (; populationIndex < bucketSize; populationIndex++) {
+            Member member = population[populationIndex];
+            bucket.populationChunk.push_back(member);
+        }
+
+        buckets.push_back(bucket);
     }
 
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    printf("Iterate over every bucket, numBuckets %i \n", (int)buckets.size());
 
-    std::cout << "\nTime elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
+    for (Bucket& bucket : buckets) {
+        uint32_t iterations = options.iterations;
+        while (iterations--) {
+            calculateFitness(bucket.populationChunk, nodes, shortestDistance, bestRoute);
+            normalizeFitness(bucket.populationChunk);
+            nextGeneration(bucket.populationChunk);
+        }
+
+    }
+
+
 
     outputJSON(bestRoute);
 
