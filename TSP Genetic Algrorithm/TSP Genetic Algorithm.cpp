@@ -327,6 +327,10 @@ internal Options parseArguments(char* args[], int argc) {
                 u16 threads = std::stoi(value);
                 options.threads = threads;
             }
+            else if (command == "buckets") {
+                u16 buckets = std::stoi(value);
+                options.numBuckets = buckets;
+            }
 
             //options.threads = args[2];
         }
