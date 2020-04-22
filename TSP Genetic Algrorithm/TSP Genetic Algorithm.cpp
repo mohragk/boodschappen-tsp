@@ -49,6 +49,44 @@ internal void printNodesArray(std::vector<Point> nodes) {
 
 }
 
+internal float randomFloat() {
+    float random = static_cast<float>(std::rand()) / RAND_MAX;
+    return random;
+}
+
+internal float randomFloat(float min, float max) {
+
+    float random = min + static_cast<float> (std::rand()) / static_cast<float>(RAND_MAX / (max - min));
+    return random;
+}
+
+
+
+internal void generateRandomNodes(std::vector<Point>& nodes) {
+    int maxNodes = 16;
+    for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
+        Point node = {};
+        node.x = randomFloat(1.0f, 800.0f);
+        node.y = randomFloat(1.0f, 600.0f);
+
+        nodes.emplace_back(node);
+    }
+}
+
+internal void generateDefaultNodes(std::vector<Point>& nodes) {
+    int maxNodes = 16;
+    int width = 600;
+    for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
+        Point node = {};
+        node.x = 10.f * (nodeIndex % width);
+        node.y = 9.f * (nodeIndex % width);
+
+        nodes.emplace_back(node);
+    }
+}
+
+
+
 internal char* getCurrentWorkingDirectory() {
     char cwd[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, cwd);
@@ -61,6 +99,7 @@ internal std::string getExePath() {
     std::string::size_type pos = std::string(buffer).find_last_of("\\/");
     return std::string(buffer).substr(0, pos);
 }
+
 
 internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]) {
 
@@ -90,7 +129,8 @@ internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]
 
         }
         else {
-            std::cout << "ERROR: File not found:" << dir << "\n";
+            std::cout << "ERROR: File not found:" << dir << ". Falling back to default nodes. \n";
+            generateDefaultNodes(nodes);
         }
     }
     catch (std::ifstream::failure e) {
@@ -101,16 +141,6 @@ internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]
 }
 
 
-internal float randomFloat() {
-    float random = static_cast<float>(std::rand()) / RAND_MAX;
-    return random;
-}
-
-internal float randomFloat(float min, float max) {
-
-    float random = min + static_cast<float> (std::rand()) / static_cast<float>(RAND_MAX / (max - min));
-    return random;
-}
 
 
 internal float getDistanceSquared(Point A, Point B) {
@@ -146,28 +176,6 @@ internal void initializeNodeOrder(std::vector<int>& nodeOrder, std::vector<Point
 }
 
 
-internal void generateRandomNodes(std::vector<Point>& nodes) {
-    int maxNodes = 16;
-    for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
-        Point node = {};
-        node.x = randomFloat(1.0f, 800.0f);
-        node.y = randomFloat(1.0f, 600.0f);
-
-        nodes.emplace_back(node);
-    }
-}
-
-internal void generateDefaultNodes(std::vector<Point>& nodes) {
-    int maxNodes = 16;
-    int width = 600;
-    for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
-        Point node = {};
-        node.x = 10.f * (nodeIndex % width);
-        node.y = 9.f * (nodeIndex % width);
-
-        nodes.emplace_back(node);
-    }
-}
 
 
 internal void fillPopulation(std::vector<Member>& population, std::vector<int>& nodeOrder) {
