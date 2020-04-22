@@ -302,15 +302,15 @@ internal void outputJSON(std::vector<int> route) {
 }
 
 struct Options {
-    u32 iterations = 1000;
-    u32 numBuckets = 128;
-    u16 threads = 1;
+    u32 iterations{ 1000 };
+    u32 numBuckets{ 128 };
+    u16 threads{ 1 };
 };
 
 
 internal Options parseArguments(char* args[], int argc) {
+
     Options options;
-    
 
     if (argc > 1) {
         for (u16 argIndex = 1; argIndex < argc; argIndex++) {
@@ -337,14 +337,16 @@ internal Options parseArguments(char* args[], int argc) {
 
 struct Bucket {
     std::vector<Member> populationChunk;
-    int bucketSize;
+    int bucketSize{0};
 };
 
 int main(int argc, char* args[])
 {
     Options options = parseArguments(args, argc);
 
+    // create seed for rand()
     std::srand((u32)std::time(0));
+
 
     std::vector<Point> nodes{};
     std::vector<int> nodeOrder{};
@@ -354,6 +356,7 @@ int main(int argc, char* args[])
     float shortestDistance = (std::numeric_limits<float>::max)();
     std::vector<int> bestRoute{};
 
+    // initialization
     generateNodesFromFile(nodes, "coords.txt");
     initializeNodeOrder(nodeOrder, nodes);
     fillPopulation(population, nodeOrder);
@@ -369,7 +372,7 @@ int main(int argc, char* args[])
         Bucket bucket;
         bucket.bucketSize = bucketSize;
 
-        // TODO: not just copy all the data
+        // NOTE: maybe not just copy all the data
         for (; populationIndex < bucketSize; populationIndex++) {
             Member member = population[populationIndex];
             bucket.populationChunk.push_back(member);
@@ -379,7 +382,7 @@ int main(int argc, char* args[])
     }
 
 
-
+    // Run algorithm per bucket
     for (Bucket& bucket : buckets) {
         u32 iterations = options.iterations;
         while (iterations--) {
@@ -391,7 +394,7 @@ int main(int argc, char* args[])
     }
 
 
-
+    // Output best route as JSON formatted array
     outputJSON(bestRoute);
 
     return 0;
