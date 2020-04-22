@@ -22,7 +22,18 @@
 #define internal static
 #define persistent static
 
-constexpr int populationSize = 1 << 13; // 8192
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
+
+
+constexpr u32 populationSize = 1 << 13; // 8192
 
 
 struct Point {
@@ -63,8 +74,8 @@ internal float randomFloat(float min, float max) {
 
 
 internal void generateRandomNodes(std::vector<Point>& nodes) {
-    int maxNodes = 16;
-    for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
+    u16 maxNodes = 16;
+    for (u16 nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
         Point node = {};
         node.x = randomFloat(1.0f, 800.0f);
         node.y = randomFloat(1.0f, 600.0f);
@@ -74,9 +85,9 @@ internal void generateRandomNodes(std::vector<Point>& nodes) {
 }
 
 internal void generateDefaultNodes(std::vector<Point>& nodes) {
-    int maxNodes = 16;
-    int width = 600;
-    for (int nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
+    u16 maxNodes = 16;
+    u32 width = 600;
+    for (u16 nodeIndex = 0; nodeIndex < maxNodes; nodeIndex++) {
         Point node = {};
         node.x = 10.f * (nodeIndex % width);
         node.y = 9.f * (nodeIndex % width);
@@ -108,7 +119,7 @@ internal void generateNodesFromFile(std::vector<Point>& nodes, const char path[]
     try {
 
         std::ifstream in_file(dir);
-        int nodeIndex = 0;
+        u16 nodeIndex = 0;
 
         if (in_file) {
             std::string line;
@@ -168,8 +179,8 @@ internal void shuffleArray(std::vector<int>& arr) {
 
 
 internal void initializeNodeOrder(std::vector<int>& nodeOrder, std::vector<Point>& nodes) {
-    uint16_t nodesInUse = static_cast<uint16_t> (nodes.size());
-    for (uint16_t i = 0; i < nodesInUse; i++) {
+    u16 nodesInUse = static_cast<u16> (nodes.size());
+    for (u16 i = 0; i < nodesInUse; i++) {
         nodeOrder.emplace_back(i);
     }
 
@@ -180,7 +191,7 @@ internal void initializeNodeOrder(std::vector<int>& nodeOrder, std::vector<Point
 
 internal void fillPopulation(std::vector<Member>& population, std::vector<int>& nodeOrder) {
 
-    for (int populationIndex = 0; populationIndex < populationSize; populationIndex++) {
+    for (u32 populationIndex = 0; populationIndex < populationSize; populationIndex++) {
         shuffleArray(nodeOrder);
         Member member = { nodeOrder, 1.0 };
         population.emplace_back(member);
@@ -191,10 +202,10 @@ internal void fillPopulation(std::vector<Member>& population, std::vector<int>& 
 internal float calculateRouteDistance(const std::vector<Point>& nodes, std::vector<int> order) {
     float totalDistance = 0.0f;
 
-    for (uint32_t i = 0; i < static_cast<int>(order.size()) - 1; i++) {
-        const uint32_t i_second = i + 1;
-        const uint32_t index_a = order[i];
-        const uint16_t index_b = order[i_second];
+    for (u32 i = 0; i < static_cast<int>(order.size()) - 1; i++) {
+        const u32 i_second = i + 1;
+        const u32 index_a = order[i];
+        const u16 index_b = order[i_second];
 
         const Point node_a = nodes[index_a];
         const Point node_b = nodes[index_b];
@@ -244,7 +255,7 @@ internal std::vector<int> pickBestOrderFromPopulation(std::vector<Member>& popul
 }
 
 internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& population) {
-    uint32_t index = 0;
+    u32 index = 0;
     float r = randomFloat();
 
     // TODO: nodes.size() as argument
@@ -262,8 +273,8 @@ internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& populatio
 
 internal void mutateOrder(std::vector<int>& order) {
     //Simply swap two elements in the order
-    const uint16_t index_a = rand() % (static_cast<uint16_t> (order.size()) - 1);
-    const uint16_t index_b = (index_a + 1) % order.size();
+    const u16 index_a = rand() % (static_cast<u16> (order.size()) - 1);
+    const u16 index_b = (index_a + 1) % order.size();
 
     std::swap(order[index_a], order[index_b]);
 }
@@ -279,9 +290,9 @@ internal void nextGeneration(std::vector<Member>& population) {
 internal void outputJSON(std::vector<int> route) {
     printf("[ ");
 
-    uint16_t count{ 0 };
-    uint16_t routeSize = static_cast<uint16_t> ( route.size() );
-    for (const int nodeIndex : route) {
+    u16 count{ 0 };
+    u16 routeSize = static_cast<u16> ( route.size() );
+    for (const u16 nodeIndex : route) {
         printf("%i", nodeIndex);
         if (count < routeSize - 1) printf(", ");
         count++;
@@ -291,9 +302,9 @@ internal void outputJSON(std::vector<int> route) {
 }
 
 struct Options {
-    uint32_t iterations;
-    uint32_t numBuckets = 128;
-    uint16_t threads;
+    u32 iterations;
+    u32 numBuckets = 128;
+    u16 threads;
 };
 
 
@@ -303,18 +314,18 @@ internal Options parseArguments(char* args[], int argc) {
     options.threads = 32;
 
     if (argc > 1) {
-        for (uint16_t argIndex = 1; argIndex < argc; argIndex++) {
+        for (u16 argIndex = 1; argIndex < argc; argIndex++) {
             std::string arg(args[argIndex]);
             std::string::size_type pos = arg.find(":");
             std::string command = arg.substr(0, pos);
             std::string value = arg.substr(pos + 1);
             
             if (command == "iterations") {
-                uint16_t iterations = std::stoi(value);
+                u16 iterations = std::stoi(value);
                 options.iterations = iterations;
             }
             else if (command == "threads") {
-                uint16_t threads = std::stoi(value);
+                u16 threads = std::stoi(value);
                 options.threads = threads;
             }
 
@@ -334,7 +345,7 @@ int main(int argc, char* args[])
 {
     Options options = parseArguments(args, argc);
 
-    std::srand((uint32_t)std::time(0));
+    std::srand((u32)std::time(0));
 
     std::vector<Point> nodes{};
     std::vector<int> nodeOrder{};
@@ -351,10 +362,10 @@ int main(int argc, char* args[])
 
     // Split into multiple buckets
     std::vector<Bucket> buckets;
-    uint16_t numBuckets = options.numBuckets;
-    uint32_t populationIndex = 0;
-    for (uint16_t bucketIndex = 0; bucketIndex <  numBuckets; bucketIndex++) {
-        uint16_t bucketSize = population.size() / numBuckets;
+    u16 numBuckets = options.numBuckets;
+    u32 populationIndex = 0;
+    for (u16 bucketIndex = 0; bucketIndex <  numBuckets; bucketIndex++) {
+        u16 bucketSize = population.size() / numBuckets;
         
         Bucket bucket;
         bucket.bucketSize = bucketSize;
@@ -371,7 +382,7 @@ int main(int argc, char* args[])
 
 
     for (Bucket& bucket : buckets) {
-        uint32_t iterations = options.iterations;
+        u32 iterations = options.iterations;
         while (iterations--) {
             calculateFitness(bucket.populationChunk, nodes, shortestDistance, bestRoute);
             normalizeFitness(bucket.populationChunk);
