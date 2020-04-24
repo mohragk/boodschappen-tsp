@@ -33,7 +33,7 @@ typedef int32_t s32;
 typedef int64_t s64;
 
 
-constexpr u32 populationSize = 1 << 13; // 8192
+constexpr u32 populationSize = 1 << 12;  // 4096
 
 
 struct Point {
@@ -45,6 +45,11 @@ struct Member {
     std::vector<int> nodeOrder;
     float fitness;
 };
+
+template <typename T>
+internal int arrayCount(T *array) {
+    return sizeof(array) / sizeof(array[0]);
+}
 
 internal void printArray(std::vector<int> array) {
     for (int item : array) {
@@ -199,7 +204,7 @@ internal void fillPopulation(std::vector<Member>& population, std::vector<int>& 
 internal float calculateRouteDistance(const std::vector<Point>& nodes, std::vector<int> order) {
     float totalDistance = 0.0f;
 
-    for (u32 i = 0; i < static_cast<int>(order.size()) - 1; i++) {
+    for (u32 i = 0; i < static_cast<u64>(order.size()) - 1; i++) {
         const u32 i_second = i + 1;
         const u32 index_a = order[i];
         const u16 index_b = order[i_second];
@@ -252,7 +257,7 @@ internal std::vector<int> pickBestOrderFromPopulation(std::vector<Member>& popul
 }
 
 internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& population) {
-    u32 index = 0;
+    u64 index = 0;
     float r = randomFloat();
 
     // TODO: nodes.size() as argument
@@ -263,15 +268,15 @@ internal std::vector<int> pickOrderFromPopulation(std::vector<Member>& populatio
 
     index--;
 
-    index = (index > (populationSize - 1)) ? populationSize - 1 : index;
-    assert(index >= 0 && index < populationSize - 1);
+    index = (index > (population.size() - 1)) ? population.size() - 1 : index;
+    assert(index >= 0 && index < population.size() - 1);
     return population[index].nodeOrder;
 }
 
 internal void mutateOrder(std::vector<int>& order) {
     //Simply swap two elements in the order
     const u16 index_a = rand() % (static_cast<u16> (order.size()) - 1);
-    const u16 index_b = (index_a + 1) % order.size();
+    const u16 index_b = (index_a + 1) % (static_cast<u16> (order.size()));
 
     std::swap(order[index_a], order[index_b]);
 }
@@ -285,7 +290,7 @@ internal void nextGeneration(std::vector<Member>& population) {
 }
 
 internal void outputJSON(std::vector<int> route) {
-    printf("[ ");
+    printf("[");
 
     u16 count{ 0 };
     u16 routeSize = static_cast<u16> ( route.size() );
@@ -295,7 +300,7 @@ internal void outputJSON(std::vector<int> route) {
         count++;
     }
 
-    printf(" ]");
+    printf("]");
 }
 
 struct Options {
@@ -366,22 +371,26 @@ int main(int argc, char* args[])
     // Split into multiple buckets
     std::vector<Bucket> buckets;
     u16 numBuckets = options.numBuckets;
-    u32 populationIndex = 0;
+    u16 bucketSize = population.size() / numBuckets;
+    
     for (u16 bucketIndex = 0; bucketIndex <  numBuckets; bucketIndex++) {
-        u16 bucketSize = population.size() / numBuckets;
         
         Bucket bucket;
         bucket.bucketSize = bucketSize;
 
+        u32 populationIndex = bucketIndex * bucketSize;
+        u32 bucketEnd = bucketSize * (bucketIndex + 1);
         // NOTE: maybe not just copy all the data
-        for (; populationIndex < bucketSize; populationIndex++) {
+        for (; populationIndex < bucketEnd; populationIndex++) {
             Member member = population[populationIndex];
             bucket.populationChunk.push_back(member);
         }
 
         buckets.push_back(bucket);
+
     }
 
+    
 
     // Run algorithm per bucket
     for (Bucket& bucket : buckets) {
