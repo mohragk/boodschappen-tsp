@@ -18,6 +18,7 @@
 #include <iterator>
 #include <algorithm>
 #include <vector>
+#include <thread>
 
 #define internal static
 #define persistent static
@@ -346,6 +347,21 @@ struct Bucket {
     int bucketSize{0};
 };
 
+void iterateOverPopulationChunk(
+    std::vector<Member> &populationChunk, 
+    std::vector<Point> &nodes, 
+    float &shortestBucketDistance, 
+    std::vector<int> &bestBucketRoute, 
+    u64 iterations) 
+{
+    while (iterations--) {
+        calculateFitness(populationChunk, nodes, shortestBucketDistance, bestBucketRoute);
+        normalizeFitness(populationChunk);
+        nextGeneration(populationChunk);
+    }
+}
+
+
 int main(int argc, char* args[])
 {
     Options options = parseArguments(args, argc);
@@ -372,7 +388,8 @@ int main(int argc, char* args[])
     std::vector<Bucket> buckets;
     u16 numBuckets = options.numBuckets;
     u16 bucketSize = population.size() / numBuckets;
-    
+    std::vector<std::thread> threads;
+
     for (u16 bucketIndex = 0; bucketIndex <  numBuckets; bucketIndex++) {
         
         Bucket bucket;
@@ -387,22 +404,42 @@ int main(int argc, char* args[])
         }
 
         buckets.push_back(bucket);
-
+       
+        
     }
 
-    
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+
+    auto func = [](
+        std::vector<Member>& populationChunk,
+        std::vector<Point>& nodes,
+        float& shortestBucketDistance,
+        std::vector<int>& bestBucketRoute,
+        u64 iterations) {
+            while (iterations--) {
+                calculateFitness(populationChunk, nodes, shortestBucketDistance, bestBucketRoute);
+                normalizeFitness(populationChunk);
+                nextGeneration(populationChunk);
+            }
+    };
 
     // Run algorithm per bucket
     for (Bucket& bucket : buckets) {
-        u32 iterations = options.iterations;
-        while (iterations--) {
-            calculateFitness(bucket.populationChunk, nodes, shortestDistance, bestRoute);
-            normalizeFitness(bucket.populationChunk);
-            nextGeneration(bucket.populationChunk);
-        }
+        float shortestBucketDistance = (std::numeric_limits<float>::max)();
+        std::vector<int> bestBucketRoute;
+       
+        
+        std::thread th(func);
+        threads.push_back(th);
+       
 
     }
 
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    u64 timeMillis = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    
+    printf("Time elapsed: %lli \n", timeMillis);
 
     // Output best route as JSON formatted array
     outputJSON(bestRoute);
